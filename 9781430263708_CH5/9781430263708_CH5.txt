@@ -1,0 +1,180 @@
+# - Chapter 5 - IPv6 and PowerShell
+# - IPv6 only PowerShell cmdlets
+Get-NetIPv6Protocol 
+Set-NetIPv6Protocol 
+#
+# - Randomize IPv6 Addresses for Privacy
+# turn off privacy addressing (make it do EUI-64)
+Set-NetIPv6Protocol -RandomizeIdentifiers Disabled
+# turn back on privacy addressing 
+Set-NetIPv6Protocol -RandomizeIdentifiers Enabled
+#
+# - Temporary IPv6 Address Behavior
+# - turn off temporary addressing 
+Set-NetIPv6Protocol -UseTemporaryAddresses Disabled 
+# - turn back on temporary addressing 
+Set-NetIPv6Protocol -UseTemporaryAddresses Enabled 
+#
+# - Physical and Logical Interfaces
+Get-NetAdapter 
+Set-NetAdapter 
+Disable-NetAdapter 
+Enable-NetAdapter 
+Rename-NetAdapter  
+Restart-NetAdapter
+# - examples of the above cmdlets
+# - Disable an example Wi-Fi adapter 
+Disable-NetAdapter –InterfaceDescription 'Intel(R) Centrino(R) Advanced-N 6205' –Confirm:$false 
+# - Enable the example Wi-Fi adapter 
+Enable-NetAdapter –InterfaceDescription 'Intel(R) Centrino(R) Advanced-N 6205' –Confirm:$false
+# - Rename the adapter 
+Rename-NetAdapter  –Name <current name> –NewName <new name>
+# - Disable then Enable the adapter 
+Restart-NetAdapter
+#
+# - Interface Management
+Get-NetIPAddress 
+New-NetIPAddress 
+Set-NetIPAddress 
+Remove-NetIPAddress 
+Get-NetIPConfiguration 
+# - examples of the above cmdlets
+# - see if any existing IP addresses are assigned to interface 20 (Wi-Fi) 
+Get-NetIPAddress –InterfaceIndex 20 
+# - Set the IP address on the interface for the first time using PowerShell
+New-NetIPAddress -InterfaceIndex 12 -IPAddress 2001:0db8:cafe:0010::1 -PrefixLength 64 -DefaultGateway 2001:0db8:cafe:0010::254 
+# - If you are modifying an existing server IP stack you will need to use PowerShell
+Set-NetIPAddress -InterfaceIndex 12 -IPAddress 2001:0db8:cafe:0010::2 -PrefixLength 64 
+# - Remove the IP address on the interface
+Remove-NetIPAddress -InterfaceIndex 12 -Confirm:$false
+#
+# - Routing Management
+Get-NetRoute 
+New-NetRoute 
+Remove-NetRoute 
+# - examples of the above cmdlets
+# - see the existing IPv6 routing table 
+Get-NetRoute –AddressFamily IPv6
+# - add an example IPv6 route to the routing table
+New-NetRoute -DestinationPrefix 2600::/12 -InterfaceIndex 20 -NextHop fe80::5ef:b5a3:2ab1:54ce -Publish Yes -RouteMetric 256 
+# - remove an example IPv6 route to the routing table 
+Remove-NetRoute -DestinationPrefix 2600::/12 –Confirm:$false 
+#
+# - DNS Client Management
+Get-DnsClientServerAddress 
+Set-DnsClientServerAddress
+# - see the existing DNS resolver IPv6 addresses on a Windows host
+Get-DnsClientServerAddress -AddressFamily IPv6
+# - set the IPv6 DNS resolvers to 2001:4860:4860::8888 and 2001:4860:4860::8844
+Set-DnsClientServerAddress -InterfaceIndex 20 -ServerAddresses("2001:4860:4860::8888","2001:4860:4860::8844")
+# - restore the DNS settings to what DHCP provided
+Set-DnsClientServerAddress –InterfaceIndex 20 -ResetServerAddresses
+#
+# - 6to4 transition technology
+Get-Net6to4Configuration
+Set-Net6to4Configuration
+Reset-Net6to4Configuration
+# - first check the 6to4 status with PowerShell
+Get-Net6to4Configuration
+# - show the status with netsh
+netsh interface ipv6 6to4 show state
+# - turn off 6to4
+Set-Net6to4Configuration -State Disabled  
+# - same task with netsh 
+netsh interface ipv6 6to4 set state disable  
+#
+# - ISATAP transition technology
+Get-NetIsatapConfiguration
+Set-NetIsatapConfiguration
+Reset-NetIsatapConfiguration
+# - first check the ISATAP status 
+Get-NetIsatapConfiguration 
+# - show the status 
+netsh interface ipv6 isatap show state 
+# - turn off ISATAP 
+Set-NetIsatapConfiguration -State Disabled 
+Set-NetIsatapConfiguration -ResolutionState Disabled 
+# - same task with netsh
+netsh interface isatap set state disable 
+netsh interface isatap set router state disable  
+#
+# - Teredo transition technology
+Get-NetTeredoConfiguration
+Get-NetTeredoState
+Set-NetTeredoConfiguration
+Reset-NetTeredoConfiguration
+# - Teredo status 
+Get-NetTeredoConfiguration 
+Get-NetTeredoState 
+# - show the status with netsh
+netsh interface teredo show state 
+# - turn off teredo  
+Set-NetTeredoConfiguration -Type Disabled 
+# - same task with netsh
+netsh interface teredo set state type=Disabled 
+#
+# - IPSec
+Show-NetIPsecRule 
+Get-NetIPsecRule 
+Enable-NetIPsecRule 
+Disable-NetIPsecRule
+New-NetIPsecRule 
+Remove-NetIPsecRule 
+Set-NetIPsecRule
+# - build new IPsec rule on site A edge server
+$qMProposal = New-NetIPsecQuickModeCryptoProposal -Encapsulation ESP -ESPHash SHA1 -Encryption DES3
+$qMCryptoSet = New-NetIPsecQuickModeCryptoSet –DisplayName "esp:sha1-des3" -Proposal $qMProposal
+New-NetIPsecRule -DisplayName "Tunnel from Site A to Site B" -Mode Tunnel -LocalAddress 2001:db8:a:1::/64 -RemoteAddress 2001:db8:b:1::/64 -LocalTunnelEndpoint 2001:db8:a:666::1 -RemoteTunnelEndpoint 2001:db8:b:666::1 -InboundSecurity Require -OutboundSecurity Require -QuickModeCryptoSet $qMCryptoSet.Name 
+# - build new IPsec rule on site B edge server 
+$qMProposal = New-NetIPsecQuickModeCryptoProposal -Encapsulation ESP -ESPHash SHA1 -Encryption DES3 
+$qMCryptoSet = New-NetIPsecQuickModeCryptoSet –DisplayName "esp:sha1-des3" -Proposal $qMProposal 
+New-NetIPsecRule -DisplayName "Tunnel from Site B to Site A" -Mode Tunnel -LocalAddress 2001:db8:b:1::/64 -RemoteAddress 2001:db8:a:1::/64 -LocalTunnelEndpoint 2001:db8:b:666::1 -RemoteTunnelEndpoint 2001:db8:a:666::1 -InboundSecurity Require -OutboundSecurity Require -QuickModeCryptoSet $qMCryptoSet.Name 
+# - remove the IPsec rule on the site A edge server 
+Remove-NetIPsecRule -DisplayName "Tunnel from Site A to Site B" 
+#
+# - now lets modify this a bit and create a preshared key example for site A edge server
+$Site2SitePSK = New-NetIPsecAuthProposal –Machine –PreSharedKey IPv6isAwesome
+$Site2SiteAuthSET = New-NetIPsecPhase1AuthSet –Displayname "Site A to Site B PSK Auth Set for IPv6" –Proposal $Site2SitePSK 
+New-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" –Enabled True –Profile Any -Mode Tunnel -LocalAddress 2001:db8:a:1::/64 -RemoteAddress 2001:db8:b:1::/64 -LocalTunnelEndpoint 2001:db8:a:666::1 -RemoteTunnelEndpoint 2001:db8:b:666::1 -InboundSecurity Require -OutboundSecurity Require –Phase1AuthSet $Site2SiteAuthSet.name
+# - now lets modify this a bit and create a preshared key example for site B edge server
+$Site2SitePSK = New-NetIPsecAuthProposal –Machine –PreSharedKey IPv6isAwesome
+$Site2SiteAuthSET = New-NetIPsecPhase1AuthSet –Displayname "Site B to Site A PSK Auth Set for IPv6" –Proposal $Site2SitePSK 
+New-NetIPsecRule -DisplayName "Tunnel from Site B to Site A Network Rule" –Enabled True –Profile Any -Mode Tunnel -LocalAddress 2001:db8:b:1::/64 -RemoteAddress 2001:db8:a:1::/64 -LocalTunnelEndpoint 2001:db8:b:666::1 -RemoteTunnelEndpoint 2001:db8:a:666::1 -InboundSecurity Require -OutboundSecurity Require –Phase1AuthSet $Site2SiteAuthSet.name 
+# - disable the IPsec rule 
+Set-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -Enabled False 
+# - display the IPsec rule to validate it is disabled 
+Get-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -PolicyStore ActiveStore 
+# - enable the IPsec rule 
+Enable-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -Confirm:$false 
+# - check the IPsec rule 
+Get-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -PolicyStore ActiveStore 
+# - disable the IPsec rule 
+Disable-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -Confirm:$false 
+# - check the IPsec rule 
+Get-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule" -PolicyStore ActiveStore 
+# - remove the IPsec rule on the site A edge server
+Remove-NetIPsecRule -DisplayName "Tunnel from Site A to Site B Network Rule"   
+# - confirm there are no rules 
+Show-NetIPsecRule 
+#
+# VPN
+Get-VpnConnection 
+Add-VpnConnection 
+Remove-VpnConnection  
+Set-VpnConnection  
+Set-VpnConnectionProxy 
+#
+# - to get current VPN Connection status
+Get-VpnConnection 
+# - generate EAP configuration 
+$EAPConf = New-EapConfiguration -UseWinlogonCredential   
+# - generate new VPN 
+Add-VpnConnection -Name "TestVPN" -ServerAddress "vpn.example.com" -TunnelType Ikev2 -EncryptionLevel Required -AuthenticationMethod Eap -SplitTunneling -EapConfigXmlStream
+$EAPConf.EapConfigXmlStream 
+# - remove the VPN named "TestVPN"  
+Remove-VpnConnection -Name "TestVPN" -Force  
+# -  change the VPN parameters of TestVPN  
+Set-VpnConnection -Name "TestVPN" -ServerAddress "[2001:db8:cafe:a::1]" 
+# - set up a proxy VPN 
+Set-VpnConnectionProxy -Name "TestVPN" -ProxyServer "[2001:db8:cafe:a::1]:8080" -BypassProxyForLocal
+# - EOF

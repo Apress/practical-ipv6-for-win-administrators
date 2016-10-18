@@ -1,0 +1,62 @@
+# - Chapter 8 - IPv6 and DNS
+# - Installing DNS
+Add-WindowsFeature DNS
+Get-WindowsFeature DNS
+# - to modify the DNS listener IP address
+Get-DnsServer | Export-Clixml -Path "c:\DnsServerConfig1.xml"
+# - import the DNS listener file back in (it replaces the file)
+$x = Import-Clixml "c:\DnsServerConfig1.xml"
+Set-DnsServer -InputObject $x 
+#
+# - IPv6 DNS resource entries
+Add-DnsServerPrimaryZone 
+Add-DnsServerResourceRecordAAAA 
+Remove-DnsServerResourceRecord 
+# - build out the example.com zone
+Add-DnsServerPrimaryZone -Name "example.com" -ZoneFile "example.com.dns" 
+# - build out an AAAA record
+Add-DnsServerResourceRecordAAAA -Name "ipv6host" -ZoneName "example.com" -CreatePtr -AllowUpdateAny -IPv6Address "2001:db8:a::1" -TimeToLive 08:00:00 
+# - as an alternative do
+Add-DnsServerResourceRecord -AAAA -Name "ipv6host" -ZoneName "example.com" -CreatePtr -AllowUpdateAny -IPv6Address "2001:db8:a::1" -TimeToLive 08:00:00 
+# - remove the record
+Remove-DnsServerResourceRecord -name "ipv6host" -ZoneName "example.com" -RRType AAAA -Force
+#
+# - Get DNS query block list
+Get-DnsServerGlobalQueryBlockList
+# - Root Hint information
+Get-DnsServerRootHint 
+Import-DnsServerRootHint 
+Add-DnsServerRootHint
+Remove-DnsServerRootHint
+# - example PowerShell cmdlet to see unique root level servers
+Get-DnsServerRootHint | sort-object -property{$_.NameServer.RecordData.NameServer} -Unique
+# - removing a.root-servers.net
+Remove-DnsServerRootHint -NameServer "a.root-servers.net" 
+# - adding a new a.root-server.net entry
+Add-DnsServerRootHint -NameServer "a.root-servers.net" -IPAddress 2001:503:ba3e::2:30 
+# - check for the change
+Get-DnsServerRootHint | Where-Object {$_.NameServer.RecordData.NameServer -EQ "a.root-servers.net."} | Sort-Object -Unique 
+#
+Get-DnsServerSetting 
+Test-DnsServer 
+# - example of testing DNS
+Test-DnsServer -IPAddress ::1 -ZoneName "example.com" 
+# - check for the DNS Server module
+Get-Command -Module DNSServer 
+#
+# - DNS client settings
+Get-DnsClientServerAddress
+# - For IPv6 only
+Get-DnsClientServerAddress -AddressFamily IPv6 
+# - set new DNS resolver server IPs
+Set-DnsClientServerAddress -InterfaceIndex 4 -ServerAddresses("2001:4860:4860::8888","2001:4860:4860::8844") 
+# - check the DNS resolver settings
+Get-DnsClientServerAddress -InterfaceIndex 4 -AddressFamily IPv6 
+# - test against the default DNS resolvers
+Resolve-DnsName -Name www.cav6tf.org -Type AAAA 
+# - test against a specific DNS resolver
+Resolve-DnsName -Name www.cav6tf.org -Type AAAA -Server 2001:4860:4860::8888
+# - script to determine which interface a name resolver will use to connect to a resource
+$rn = Resolve-DnsName -name www.cav6tf.org -type AAAA 
+Find-NetRoute -RemoteIPAddress $rn.ip6address 
+# - EOF

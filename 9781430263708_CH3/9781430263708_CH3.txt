@@ -1,0 +1,78 @@
+# - Chapter 3 - IPv6 Addressing
+# - Enable ISATAP forwarding:
+# - ISATAP Router PowerShell configuration example for Windows Server 2012 and 2012 R2
+Set-NetIPInterface -InterfaceAlias <Name> -AddressFamily IPv6 -Forwarding Enabled -Advertising Enabled 
+# - ISATAP Router netsh configuration example for Windows Server 2008 and 2008 R2
+netsh interface ipv6 set interface <ISATAP Interface Name or Index> forwarding=enabled advertise=enabled 
+#
+# - Enable ISATAP routing and publish the route for the ISATAP prefix:
+# - ISATAP PowerShell configuration example for Windows Server 2012 and 2012 R2
+New-NetRoute -DestinationPrefix <Prefix> -InterfaceAlias <Name> -AddressFamily IPv6 -Publish Yes 
+# - ISATAP netsh configuration example for Windows Server 2008 and 2008 R2
+netsh interface ipv6 add route <Address/Prefix> <ISATAP Interface Name or Index> publish=yes 
+#
+# - Enable the ISATAP interface:
+# - ISATAP PowerShell configuration example for Windows Server 2012 and 2012 R2
+Set-NetIsatapConfiguration -Router <IPv4 address> 
+# - ISATAP netsh configuration example for Windows Server 2008 and 2008 R2
+netsh interface isatap set router <IPv4 Address or name> 
+#
+# - Teredo
+# - Teredo status PowerShell example
+Get-NetTeredoConfiguration  
+# - Teredo status netsh example
+netsh interface teredo show state  
+#
+# - Configure the Teredo Server in PowerShell
+Set-NetTeredoConfiguration -Type server -ServerName <Name or IP Address>
+# - Configure the Teredo Server in netsh
+netsh interface teredo set state type=server servername=<Name or IP Address>
+#
+# - Configure the Teredo Relay with routing in PowerShell
+Set-NetIPInterface -InterfaceAlias <Name> -AddressFamily IPv6 -Forwarding Enabled
+# - Configure the Teredo Relay with routing in netsh
+netsh interface ipv6 set interface <Interface Name or Index Number> forwarding=enabled
+#
+# - Turn on Shunt for Teredo
+Set-NetTeredoConfiguration -ServerShunt $True 
+Reset-NetTeredoConfiguration -ServerShunt 
+# - Confirm Shunt is on for Teredo
+Get-NetTeredoConfiguration
+#
+# - Configure Teredo Clients with PowerShell
+Set-NetTeredoConfiguration -ServerName <name>
+# - Configure Teredo Clients with netsh
+netsh interface teredo set state servername=<IPv4 address>
+#
+# - Multicast
+# - Display the multicast addresses on a host's interface
+netsh interface ipv6 show joins <interface id>
+# - Display the multicast neighbors on a host's interface
+Get-NetNeighbor -AddressFamily IPv6 -InterfaceIndex <interface id> | ft 
+# - Remove the multicast neighbor entries on a host
+Remove-NetNeighbor -AddressFamily IPv6 -Confirm:$false
+#
+# - Random IDs
+# - turn off random addressing (make it do EUI-64) with PowerShell
+Set-NetIPv6Protocol -RandomizeIdentifiers Disabled 
+# - turn back on random addressing with PowerShell
+Set-NetIPv6Protocol -RandomizeIdentifiers Enabled     
+#- shutting off random extension (force EUI-64) with netsh
+netsh interface ipv6 set global randomizeidentifiers=disabled store=active
+netsh interface ipv6 set global randomizeidentifiers=disabled store=persistent
+#
+# - Temporary IPv6 Address
+# - turn off temporary addressing with PowerShell
+Set-NetIPv6Protocol -UseTemporaryAddresses Disabled 
+# - turn back on temporary addressing with PowerShell
+Set-NetIPv6Protocol -UseTemporaryAddresses Enabled 
+# - shutting off temporary addresses 
+netsh interface ipv6 set privacy state=disabled store=active 
+netsh interface ipv6 set privacy state=disabled store=persistent
+
+# - Manually setting IPv6 Addresses
+# Set the IP address on the interface for the first time using PowerShell
+New-NetIPAddress -InterfaceIndex 12 -IPAddress 2001:0db8:cafe:0010::1 -PrefixLength 64 -DefaultGateway 2001:0db8:cafe:0010::254 
+# If you are modifying an existing server IP stack you will need to use PowerShell
+Set-NetIPAddress -InterfaceIndex 12 -IPAddress 2001:0db8:cafe:0010::2 -PrefixLength 64 
+# - EOF

@@ -1,0 +1,67 @@
+# - Chapter 6 - IPv6 and the Windows Firewall
+# - Transport Layer Filters
+Get-NetTCPSetting 
+Get-NetTransportFilter 
+New-NetTransportFilter 
+Remove-NetTransportFilter 
+# - next show all the specific TCP settings and what Transport filter options are available 
+Get-NetTCPSetting 
+# - next show the Transport filters 
+Get-NetTransportFilter 
+# - you can create a custom Transport filter using 
+New-NetTransportFilter -SettingName Datacenter -DestinationPrefix 10.0.0.0/8 
+New-NetTransportFilter -SettingName Datacenter -DestinationPrefix 2001:db8:cafe:10::/64 
+# - confirm the new Transport filters were added 
+Get-NetTransportFilter
+# - remove the custom Transport filters - you can add -confirm:$false if you want to avoid
+# - the interactive confirmation prompts from PowerShell
+Remove-NetTransportFilter -SettingName Datacenter -DestinationPrefix 10.0.0.0/8
+Remove-NetTransportFilter -SettingName Datacenter -DestinationPrefix 2001:db8:cafe:10::/64
+# - check the status to confirm they have been removed
+Get-NetTransportFilter 
+#
+# - Wireless profiles
+# - to clear the wireless key for profile HOWFUNKY 
+netsh wlan show profile name="HOWFUNKY" key=clear 
+# - to delete the profile named HOWFUNKY 
+netsh wlan delete profile name="HOWFUNKY" 
+# - to set the connection mode from "automatic" to "manual" for wifi association 
+netsh wlan set profileparameter name="HOWFUNKY" connectionmode=manual
+#
+# - Firewall profiles
+Get-NetFirewallProfile
+Set-NetFirewallProfile
+# - example to turn on all firewall profiles
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+#
+Get-NetFirewallRule 
+New-NetFirewallRule 
+Disable-NetFirewallRule 
+Enable-NetFirewallRule 
+Remove-NetFirewallRule
+Copy-NetFirewallRule 
+Rename-NetFirewallRule 
+Show-NetFirewallRule 
+# - netsh commands for the advanced firewall
+netsh advfirewall firewall show rule name=all  
+netsh advfirewall firewall add rule name="Block ICMPv6 Outbound" dir=out protocol=icmpv6 action=block 
+netsh advfirewall firewall show rule name="Block ICMPv6 Outbound" 
+netsh advfirewall firewall delete rule name="Block ICMPv6 Outbound" 
+# - example of creating a new firewall rule 
+# - blocking the telnet application (not just a port) 
+New-NetFirewallRule -DisplayName "Block Outbound Telnet" -Direction Outbound -Program %SystemRoot%\System32\tlntsvr.exe –Protocol TCP –LocalPort 23 -Action Block 
+# - remove the firewall rule 
+Remove-NetFirewallRule -DisplayName "Block Outbound Telnet" 
+# - example of blocking a specific IPv4 address to prevent 6to4 
+New-NetFirewallRule -DisplayName "Block 6to4 Outbound" -Direction Outbound -Protocol 41 -RemoteAddress 192.88.99.1 -Action Block -Profile Public 
+# - you can do the same command with netsh with 
+netsh advfirewall firewall add rule name="Block 6to4 Outbound" dir=out protocol=41 remoteip=192.88.99.1 action=block profile=public 
+# - to display the firewall rule use 
+Get-NetFirewallRule -DisplayName "Block 6to4 Outbound" 
+# - and to display the firewall rule with netsh 
+netsh advfirewall firewall show rule name="Block 6to4 Outbound" 
+# - finally to remove the rule with PowerShell 
+Remove-NetFirewallRule -DisplayName "Block 6to4 Outbound" 
+# - and to remove it with netsh 
+netsh advfirewall firewall delete rule name="Block 6to4 Outbound" 
+# - EOF

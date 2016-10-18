@@ -1,0 +1,58 @@
+# - Chapter 10 - Miscellaneous IPv6
+# - NCSI
+# - example that modifies the ncsi url location
+Set-NCSIPolicyConfiguration -CorporateWebsiteProbeURL http://ipv6.ncsi.example.com -policystore Howfunky
+# - get the ncsi policy
+Get-NCSIPolicyConfiguration
+# - reset back to default the ncsi policy on host "Howfunky"
+Reset-NCSIPolicyConfiguration -PolicyStore Howfunky
+#
+# - prefix policy table
+# - get the prefix policy table
+Get-NetPrefixPolicy
+# - netsh commands to manage the prefix policy table
+netsh interface ipv6 show prefixpolicies
+netsh interface ipv6 add prefixpolicy <prefix> <precedence> <label>
+netsh interface ipv6 set prefixpolicy <prefix> <precedence> <label>
+netsh interface ipv6 remove prefixpolicy <prefix> <precedence> <label>
+# - sample script to get an RFC 3484 host to RFC 6724
+netsh int ipv6 add prefixpolicy 3ffe::/16 1 12 store=persistent
+netsh int ipv6 add prefixpolicy fec0::/10 1 11 store=persistent
+netsh int ipv6 add prefixpolicy fc00::/8 4 13 store=persistent
+netsh int ipv6 add prefixpolicy fd00::/8 3 14 store=persistent
+netsh int ipv6 add prefixpolicy ::/96 1 3 store=persistent
+netsh int ipv6 add prefixpolicy ::ffff:0:0/96 35 4 store=persistent
+#
+# - IPAM
+# - installing IPAM
+Install-WindowsFeature IPAM -IncludeManagementTools
+# - set up the database roles for IPAM
+Invoke-IpamServerProvisioning -Confirm:$false -Force
+# - a short list of PowerShell cmdlets for IPAM
+Add-IpamAddress
+Add-IpamBlock
+Add-IpamRange
+Add-IpamSubnet
+Export-IpamAddress
+Export-IpamRange
+Export-IpamSubnet
+Find-IpamFreeAddress
+Get-IpamAddress
+Get-IpamBlock
+Get-IpamCapability
+Get-IpamConfiguration
+Get-IpamDatabase
+Get-IpamRange
+Get-IpamSubnet
+Import-IpamAddress
+Import-IpamRange
+Import-IpamSubnet
+Remove-IpamAddress
+Remove-IpamBlock
+Remove-IpamSubnet
+Set-IpamAddress
+Set-IpamBlock
+Set-IpamConfiguration
+Set-IpamSubnet
+Update-IpamServer
+# - EOF

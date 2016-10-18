@@ -1,0 +1,71 @@
+# - Chapter 9 - IPv6 and DHCP
+# - Installing DHCP
+Add-WindowsFeature DHCP -IncludeAllSubFeature -IncludeManagementTools
+# - confirm it was installed
+Get-WindowsFeature DHCP
+# - determine the InterfaceIndex and InterfaceAlias information for the Adapter you want to modify 
+Get-NetAdapter 
+# - set the static IPv6 address you want on the Windows Server 
+New-NetIPAddress -InterfaceIndex 12 -IPAddress <IPv6 Address> -PrefixLength 64 
+# - disable the use of temporary addresses on the server just in case someone enabled it - it is off by default on Server which is a best practice 
+Set-NetIPv6Protocol -UseTemporaryAddresses Disabled 
+Set-DhcpServerv6Binding -BindingState $true -InterfaceAlias "Ethernet" 
+# - to AD integrated DHCP for server do
+Add-DhcpServerInDC -DnsName "dhcp-server.example.com" 
+# - disable DHCP client on the server interface
+Set-NetIPInterface -InterfaceIndex <#> -Dhcp Disabled
+#
+# - create a new DHCP scope
+Add-DHCPServerv6Scope -Prefix 2001:db8:cafe:10:: -name test1-ipv6 -state Active 
+# - set up an exclusion range
+Add-DHCPServerv6ExclusionRange -Prefix 2001:db8:cafe:10:: -StartRange 2001:db8:cafe:10::1 -EndRange 2001:db8:cafe:10::256
+# - get the DHCPv6 scope information
+Get-DHCPServerv6Scope | Format-List * 
+# - get a specific IPv6 scope
+Get-DhcpServerv6Scope -Prefix 2001:db8:cafe:10::
+#
+# DHCP Scope Options
+# - set scope option values
+Set-DhcpServerv6OptionValue -OptionId <#> -value <parameter value> 
+# - get the scope options
+Get-DhcpServerv6OptionValue -OptionId <#> 
+# - example to set up the DNS recursive resolver address
+Set-DhcpServerv6OptionValue -OptionId 23 -value 2001:4860:4860::8888
+#
+# Change the client DHCP settings
+Set-NetIPInterface 
+Stop-Service
+# - to stop the DHCP service on a Windows host
+Stop-Service Dhcp -Confirm:$false
+# - Set router discovery on a Windows host and force DHCP
+Set-NetIPInterface -InterfaceIndex 15 -AddressFamily IPv6 -RouterDiscovery ControlledByDHCP
+#
+# - Managing DHCPv6
+Add-DhcpServerv6Reservation 
+Get-DhcpServerv6DnsSetting 
+Get-DhcpServerv6ExclusionRange
+Get-DhcpServerv6Reservation 
+Remove-DhcpServerv6ExclusionRange 
+Remove-DhcpServerv6Lease  
+Remove-DhcpServerv6Reservation
+Remove-DhcpServerv6Scope 
+Set-DhcpServerv6DnsSetting 
+Set-DhcpServerv6Reservation 
+#
+# - check an existing lease
+Get-DhcpServerv6Lease -Prefix 2001:db8:cafe:10::
+# - remove all existing leases - does NOT ask to confirm - use with caution
+Remove-DhcpServerv6Lease -Prefix 2001:db8:cafe:10:: 
+# - example of looking for a specific IPv6 address for an interface index 19
+Get-NetIPAddress -AddressFamily IPv6 -InterfaceIndex 19 | select ifIndex,IPAddress,SuffixOrigin | ft –AutoSize 
+# - on the server we can see the lease using
+Get-DhcpServerv6Lease -Prefix 2001:db8:cafe:10:: | fl
+# - set up an example IPv6 reservation
+Add-DhcpServerv6Reservation -Prefix 2001:db8:cafe:10:: -IPAddress 2001:db8:cafe:10:b:b:b:b -ClientDuid 0001000119d512ed000000000000 -Iaid 251678806 -name test-spud
+# - disable an adapter to force obtaining a new DHCPv6 lease
+Disable-NetAdapter -Name "VMware Network Adapter VMnet6" -Confirm:$false 
+# - enable the adapter to bring it back up
+Enable-NetAdapter -Name "VMware Network Adapter VMnet6" -Confirm:$false
+# - confirm the settings on the Windows host
+Get-NetIPAddress -AddressFamily IPv6 -InterfaceIndex 19 | select ifIndex,IPAddress,SuffixOrigin | ft -AutoSize 
+# - EOF
